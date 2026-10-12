@@ -260,7 +260,14 @@ func sign(iss *issuer, domains []string, ipAddresses []string, alg x509.PublicKe
 	} else {
 		return nil, fmt.Errorf("must specify at least one domain name or IP address")
 	}
-	var cnFolder = strings.Replace(cn, "*", "_", -1)
+	cnFolder := strings.Replace(cn, "*", "_", -1)
+	if len(domains) > 0 {
+		labels := strings.Split(cnFolder, ".")
+		for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
+			labels[i], labels[j] = labels[j], labels[i]
+		}
+		cnFolder = strings.Join(labels, ".")
+	}
 	err := os.Mkdir(cnFolder, 0700)
 	if err != nil && !os.IsExist(err) {
 		return nil, err
@@ -359,8 +366,8 @@ On each run, minica will generate a new keypair and sign an end-entity (leaf)
 certificate for that keypair. The certificate will contain a list of DNS names
 and/or IP addresses from the command line flags. The key and certificate are
 placed in a new directory whose name is chosen as the first domain name from
-the certificate, or the first IP address if no domain names are present. It
-will not overwrite existing keys or certificates.
+the certificate with its labels reversed, or the first IP address if no domain
+names are present. It will not overwrite existing keys or certificates.
 
 `)
 		flag.PrintDefaults()
